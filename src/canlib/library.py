@@ -4,7 +4,7 @@ import can
 
 class CANBus:
     '''Base class for CAN bus communication'''
-    def __init__(self, channel='can0'):
+    def __init__(self, channel='can0',can_filters=None):
         '''Initialize CAN bus connection
         ARG: channel name (default 'can0')
         
@@ -13,6 +13,7 @@ class CANBus:
         
         self.channel = channel
         self.bus = None
+        self.can_filters = can_filters
         self.open()
 
     def open(self):
@@ -25,7 +26,8 @@ class CANBus:
         try:
             self.bus = can.interface.Bus(
                 channel=self.channel,
-                interface='socketcan'
+                interface='socketcan',
+                can_filters=self.can_filters 
             )
             print(f"CAN opened {self.channel}")
         except can.CanError:
@@ -56,7 +58,6 @@ class CANBus:
             self.shutdown()
             raise
 
-      
     def send_extended_message(self, can_id: int, data: list):
         '''Send Extended CAN message:
         ARG: CAN ID 29-bits
@@ -89,10 +90,13 @@ class CANBus:
         '''
         try:
             msg = self.bus.recv(timeout)
-            print(
-                f"ID={hex(msg.arbitration_id)} "
-                f"DATA={list(msg.data)}"
-            )
+            if msg is None:
+                return None
+            else:
+                print(
+                    f"ID={hex(msg.arbitration_id)} "
+                    f"DATA={list(msg.data)}"
+                )
         except KeyboardInterrupt:
                 print("Interrupt")
                 self.shutdown()
